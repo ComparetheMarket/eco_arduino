@@ -26,11 +26,11 @@ funcSensor sensors[NUMSNSRS];
 StrategyFactory* sf = new StrategyFactory();
 IStrategy* s = sf->makeStrategy(StrategyTypes::COLLISION_AVOIDANCE); 
 WorkingMemory* wm = new WorkingMemory();
-ActionTypes::Enum lastAction = ActionTypes::NOP;
+ActionTypes::Enum lastAction;
 
 EcoSensors es;
 
-void agent_take_reading(funcSensor* sensors, WorkingMemory* wm, ActionTypes::Enum act) {
+void agent_take_reading(ActionTypes::Enum act) {
     struct LocF* fact = new LocF();
 
     fact->s0 = ((*sensors[S0])(0));
@@ -39,18 +39,23 @@ void agent_take_reading(funcSensor* sensors, WorkingMemory* wm, ActionTypes::Enu
     fact->s270 = ((*sensors[S270])(0));
     fact->ori = ((*sensors[OR0])(0));
     fact->precact = act;
-
-    Serial.println(fact->s0);
-    Serial.println(fact->s90);
-    Serial.println(fact->s180);
-    Serial.println(fact->s270);
+    
+    
+    Serial.println("Asseting fact...");
+    Serial.print("  FACT: ");
+    Serial.print(" S0: ");
+    Serial.print(fact->s0);
+    Serial.print(", S90: ");
+    Serial.print(fact->s90);
+    Serial.print(", S180: ");
+    Serial.print(fact->s180);
+    Serial.print(", S270: ");
+    Serial.print(fact->s270);
+    Serial.print(", OR0: ");
     Serial.println(fact->ori);
-    Serial.println(fact->precact);
-
-//    printf("sensor reading %d\n", fact->s0);
-
     // DEBUG - encapsulate
     wm->AssertFact(fact);
+    Serial.println("Fact asserted!");
 }
 
 // start of transaction, no command yet
@@ -71,7 +76,7 @@ void setup (void)
 {
   Serial.begin(115200);
   delay(2000);
-  Serial.println("EcoBrain 10");
+  Serial.println("EcoBrain 11");
   // setup pins
   pinMode(MISO, OUTPUT);
   pinMode(SS, INPUT);
@@ -88,6 +93,10 @@ void setup (void)
   // interrupt for SS falling edge
   attachInterrupt (0, ss_falling, FALLING);
   
+  randomSeed(analogRead(0));
+  Serial.print("Random number: ");
+  Serial.println(random(100));
+  
   sensors[S0] = &read_0_sonic_real; //&read_within_range;
   sensors[S90] = &read_90_sonic_real; //&read_within_range;
   sensors[S180] = &read_180_sonic_real; //&read_within_range;                                                           
@@ -99,7 +108,7 @@ void setup (void)
 void loop (void)
 {
   if (calculate) {
-    digitalWrite(BRAIN_READY, HIGH);
+//    digitalWrite(BRAIN_READY, HIGH);
     calculate = false;
     
 //    Serial.println("Let's calculate it");
@@ -107,15 +116,32 @@ void loop (void)
     setSensors(es);
     
     if (firstBelief) {
-      agent_take_reading(sensors, wm, ActionTypes::NOP);
       firstBelief = false;
+      lastAction = ActionTypes::NOP;
+      agent_take_reading(lastAction);
     }
-    agent_take_reading(sensors, wm, lastAction);
+    
+    Serial.print("Sensor 0: ");
+    Serial.print(((*sensors[S0])(0)));
+    Serial.print(", Sensor 90: ");
+    Serial.print(((*sensors[S90])(0)));
+    Serial.print(", Sensor 180: ");
+    Serial.print(((*sensors[S180])(0)));
+    Serial.print(", Sensor 270: ");
+    Serial.print(((*sensors[S270])(0)));
+    Serial.print(", Bearing: ");
+    Serial.println(((*sensors[OR0])(0)));
+    
+    agent_take_reading(lastAction);
     
     Action* action = s->getHighestYieldingAction(sensors, beliefs, 0, 0, 0, TURN_PROBABILITY);
         
     lastAction = action[0].c;
     
+    Serial.print("Action: ");
+    Serial.print(action[0].c);
+    Serial.print(", Value: ");
+    Serial.println(action[0].m);    
     Serial.println(action[0].c);
         
     byte* cmd;
@@ -163,56 +189,56 @@ void loop (void)
 
 //// draw a i 50*50 grid centred on current location and plot the readings
 //// DO NOT WANT THIS IN THE REAL CODE - JUST FOR DEBUGGING
-void print_belief_map(BMap* map) {
-
-	int grid[51][51];
-
-	// sprintf
-//	Serial.println("Printing belief map\n");
-
-	int x, y;
-
-	for(y=0;y<51;y++) {
-		for(x=0;x<51;x++) {
-			grid[x][y]=0;	
-		}
-	}
-	
-	int i;
-
-	for(i=0;i<map->_size;i++) {
-		Hn* point = map->_points[i];
-
-		int rebasedPointX = 25 + point->x;
-		int rebasedPointY = 25 + point->y;
-		int isObstacle = point->is_obstacle;
-
-		if (rebasedPointX > 0 && rebasedPointX < 51 && rebasedPointY > 0 && rebasedPointY < 51) {
-			grid[rebasedPointX] [rebasedPointY] = isObstacle;
-		}
-
-//		printf("%d,%d,%d\n",point->x, point->y, point->is_obstacle);
-//		printf("%d,%d,%d\n",rebasedPointX, rebasedPointY, isObstacle);
-	}
-
-	for(y=51;y>=0;y--) {
-		printf("\n");
-		for(x=0;x<51;x++) {
-			if(x == (map->_curx +25) && y == (map->_cury+25)) {
-				printf(" ^");
-			}
-			else if(x == 25 && y == 25) {
-				printf(" 0");
-			} else if(grid[x][y]==0) {
-				printf(" -");
-			} else {
-				printf(" %d", grid[x][y]);	
-			}
-		}
-	}
-
-	printf("\nFinished printing beleif map\n");
-}
+//void print_belief_map(BMap* map) {
+//
+//	int grid[51][51];
+//
+//	// sprintf
+////	Serial.println("Printing belief map\n");
+//
+//	int x, y;
+//
+//	for(y=0;y<51;y++) {
+//		for(x=0;x<51;x++) {
+//			grid[x][y]=0;	
+//		}
+//	}
+//	
+//	int i;
+//
+//	for(i=0;i<map->_size;i++) {
+//		Hn* point = map->_points[i];
+//
+//		int rebasedPointX = 25 + point->x;
+//		int rebasedPointY = 25 + point->y;
+//		int isObstacle = point->is_obstacle;
+//
+//		if (rebasedPointX > 0 && rebasedPointX < 51 && rebasedPointY > 0 && rebasedPointY < 51) {
+//			grid[rebasedPointX] [rebasedPointY] = isObstacle;
+//		}
+//
+////		printf("%d,%d,%d\n",point->x, point->y, point->is_obstacle);
+////		printf("%d,%d,%d\n",rebasedPointX, rebasedPointY, isObstacle);
+//	}
+//
+//	for(y=51;y>=0;y--) {
+////		printf("\n");
+//		for(x=0;x<51;x++) {
+//			if(x == (map->_curx +25) && y == (map->_cury+25)) {
+////				printf(" ^");
+//			}
+//			else if(x == 25 && y == 25) {
+////				printf(" 0");
+//			} else if(grid[x][y]==0) {
+////				printf(" -");
+//			} else {
+////				printf(" %d", grid[x][y]);	
+//			}
+//		}
+//	}
+//
+////	printf("\nFinished printing beleif map\n");
+//}
 
 void writeCommand(byte* &cmd) {
 //  Serial.println("Write command");
@@ -251,6 +277,7 @@ ISR (SPI_STC_vect)
     
   case BRAIN_CALCULATE:
     calculate = true;
+    digitalWrite(BRAIN_READY, HIGH);
     SPDR = 0;
     break;
     

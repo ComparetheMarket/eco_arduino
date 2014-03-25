@@ -15,4 +15,5 @@ class WorkingMemory {
 		BMap* MaterializeWorld();
 		LocF* GetLatestFact();	
 		void AssertFact(LocF* fact);	
+//		void AssertFact(LocF fact);	
 };

@@ -34,30 +34,38 @@ Action* CollisionAvoidanceStrategy::getHighestYieldingAction(const funcSensor* s
 
     if(((*sensors[S0])(0)) > COLLISION_INTERCEPT 
 		    && ( ((*sensors[S0])(0)) < MAX_RANGE ||  ((*sensors[S180])(0)) < MAX_RANGE )) {
-    	*(vds+svds) = 0;
+    	*(vds+svds) = curOr;
     	svds++;
     }
    
     if(((*sensors[S90])(0)) > COLLISION_INTERCEPT 
 		    && ( ((*sensors[S90])(0)) < MAX_RANGE ||  ((*sensors[S270])(0)) < MAX_RANGE )) {
-	    *(vds+svds) = 90;
+	    *(vds+svds) = (curOr + 90) % 360;
 	    svds++;
     }
 
     if(((*sensors[S180])(0)) > COLLISION_INTERCEPT
 		    && ( ((*sensors[S180])(0)) < MAX_RANGE ||  ((*sensors[S0])(0)) < MAX_RANGE )) {
-	    *(vds+svds) = 180;
+	    *(vds+svds) = (curOr + 180) % 360;
 	    svds++;
     }
     
     if(((*sensors[S270])(0)) > COLLISION_INTERCEPT
 		    && ( ((*sensors[S270])(0)) < MAX_RANGE ||  ((*sensors[S90])(0)) < MAX_RANGE )) {
-	    *(vds+svds) = 270;
+	    *(vds+svds) = (curOr + 270) % 360;
 	    svds++;
     }
-printf("svds:%d\n",svds);
+//printf("svds:%d\n",svds);
 #if ARDUINO == 1
-    if((random(1,101)) < tProb) {
+
+  int r = random(1,101);
+  
+  Serial.print("r: ");
+  Serial.print(r);
+  Serial.print(", tProb: ");
+  Serial.println(tProb);
+
+    if(r/*(random(1,101))*/ < tProb) {
         int index = random(0,svds);
 #else
     if((rand() % 100) < tProb) {
@@ -69,15 +77,31 @@ printf("svds:%d\n",svds);
 
 	int i;
 
+        int diff=*(vds+i)-curOr;
 	// this is redundant
 	for(i=0; i<svds;i++) {
-		if(*(vds+i) == curOr) {
-                    next->c = ActionTypes::MOVE;
-		    next->m = STRIDE;
-		    break;
-		}
+//		if(*(vds+i) == curOr) {
+        	
+          if(abs(diff)<OREINTATION_THRESHOLD){
+            next->c = ActionTypes::MOVE;
+            next->m = STRIDE;
+            break;
+          }
+//		}
 	}
     }
+
+
+
+
+
+
+
+
+
+
+
+
 
     free(vds);
     

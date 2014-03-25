@@ -12,8 +12,9 @@ LocF* WorkingMemory::GetLatestFact() {
 }
 
 void WorkingMemory::AssertFact(LocF* fact) {
-	_facts[_size] = (*fact);
-	_size++;
+  _facts[_size] = (*fact);
+//  _size++;
+  _size = ++_size % MAX_POINTS;
 }
 
 BMap* WorkingMemory::MaterializeWorld() {
