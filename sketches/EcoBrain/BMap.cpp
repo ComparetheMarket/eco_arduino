@@ -1,5 +1,5 @@
 #include "BMap.h"
-#include <iostream>
+//#include <iostream>
 
 void BMap::AddBelief(short int x, short int y, short int temp, short int obs) {
 
